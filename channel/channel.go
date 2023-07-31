@@ -50,6 +50,7 @@ func (ch *Channel) Receive() (interface{}, bool) {
 		ch.receiverCond.Wait()
 	}
 
+	// cannot receive if channel is closed
 	if len(ch.buffer) == 0 && ch.closed {
 		return nil, false
 	}
