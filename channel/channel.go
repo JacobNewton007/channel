@@ -1,15 +1,15 @@
 package channel
 
-import "sync"
+import (
+	"sync"
+)
 
 type Channel struct {
-	buffer        []interface{}
-	bufferSize    int
-	senderMutex   sync.Mutex
-	receiverMutex sync.Mutex
-	senderCond    *sync.Cond
-	receiverCond  *sync.Cond
-	closed        bool
+	buffer     []interface{}
+	bufferSize int
+	Mutex      sync.Mutex
+	Cond       *sync.Cond
+	closed     bool
 }
 
 // NewChannel A factory function to create new channel
@@ -20,17 +20,16 @@ func NewChannel(bufferSize int) *Channel {
 		closed:     false,
 	}
 
-	ch.senderCond = sync.NewCond(&ch.senderMutex)
-	ch.receiverCond = sync.NewCond(&ch.receiverMutex)
+	ch.Cond = sync.NewCond(&ch.Mutex)
 	return ch
 }
 
 func (ch *Channel) Send(value interface{}) {
-	ch.senderMutex.Lock()
-	defer ch.senderMutex.Unlock()
+	ch.Mutex.Lock()
+	defer ch.Mutex.Unlock()
 
 	for len(ch.buffer) == ch.bufferSize && !ch.closed {
-		ch.senderCond.Wait()
+		ch.Cond.Wait()
 	}
 
 	if ch.closed {
@@ -38,16 +37,16 @@ func (ch *Channel) Send(value interface{}) {
 	}
 
 	ch.buffer = append(ch.buffer, value)
-	ch.receiverCond.Signal()
+	ch.Cond.Signal()
 
 }
 
 func (ch *Channel) Receive() (interface{}, bool) {
-	ch.receiverMutex.Lock()
-	defer ch.receiverMutex.Unlock()
+	ch.Mutex.Lock()
+	defer ch.Mutex.Unlock()
 
 	for len(ch.buffer) == 0 && !ch.closed {
-		ch.receiverCond.Wait()
+		ch.Cond.Wait()
 	}
 
 	if len(ch.buffer) == 0 && ch.closed {
@@ -56,15 +55,14 @@ func (ch *Channel) Receive() (interface{}, bool) {
 
 	value := ch.buffer[0]
 	ch.buffer = ch.buffer[1:]
-	ch.receiverCond.Signal()
+	ch.Cond.Signal()
 	return value, true
 }
 
 func (ch *Channel) Close() {
-	ch.senderMutex.Lock()
-	defer ch.senderMutex.Unlock()
+	ch.Mutex.Lock()
+	defer ch.Mutex.Unlock()
 
 	ch.closed = true
-	ch.senderCond.Broadcast()
-	ch.receiverCond.Broadcast()
+	ch.Cond.Broadcast()
 }
