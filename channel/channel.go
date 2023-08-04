@@ -25,12 +25,12 @@ func NewChannel(bufferSize int) *Channel {
 }
 
 func (ch *Channel) Send(value interface{}) {
-	ch.Mutex.Lock()
-	defer ch.Mutex.Unlock()
 
+	ch.Cond.L.Lock()
 	for len(ch.buffer) == ch.bufferSize && !ch.closed {
 		ch.Cond.Wait()
 	}
+	ch.Cond.L.Unlock()
 
 	if ch.closed {
 		panic("Sending on closed channel")
@@ -42,12 +42,11 @@ func (ch *Channel) Send(value interface{}) {
 }
 
 func (ch *Channel) Receive() (interface{}, bool) {
-	ch.Mutex.Lock()
-	defer ch.Mutex.Unlock()
-
+	ch.Cond.L.Lock()
 	for len(ch.buffer) == 0 && !ch.closed {
 		ch.Cond.Wait()
 	}
+	ch.Cond.L.Unlock()
 
 	if len(ch.buffer) == 0 && ch.closed {
 		return nil, false
