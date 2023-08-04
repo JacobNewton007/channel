@@ -10,10 +10,13 @@ func main() {
 	c := channel.NewChannel(10)
 	c.Send(2)
 	c.Send(3)
-	c.Close()
+	c.Send(4)
 	ch, ok := c.Receive()
-	if ok {
-		fmt.Println(ch)
-	}
+	fmt.Println(ch, ok)
+	ch, ok = c.Receive()
+	fmt.Println(ch, ok)
+	ch, ok = c.Receive()
+	fmt.Println(ch, ok)
+	c.Close()
 
 }
